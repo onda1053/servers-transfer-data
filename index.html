@@ -46,6 +46,21 @@ h1{font-size:clamp(27px,6.8vw,38px);line-height:1.14;font-weight:800;letter-spac
 .bbtn{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:800;font-size:14px}
 .bbtn.ghost{background:var(--line);color:var(--ink);border:0}
 .bbtn[disabled]{opacity:.55}
+.sum{margin-top:18px;background:var(--card);border-radius:14px;padding:14px 16px;display:grid;gap:14px}
+.sgrid{display:grid;grid-template-columns:1fr auto auto;column-gap:22px;row-gap:8px;align-items:center}
+.sgrid .badge{justify-self:start}
+.sgrid b{font-size:17px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.sgrid b:nth-child(3n){color:var(--ink)}
+.sh{font-size:12px;font-weight:700;color:var(--ink-soft);text-align:right}
+.moves{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mv{border-radius:10px;padding:8px 10px;background:var(--field)}
+.mv b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.mv span{font-size:12px;font-weight:700}
+.mv.up{background:var(--okbg);color:var(--ok)}
+.mv.down{background:var(--errbg);color:var(--err)}
+.mv.toss{background:var(--fully);color:var(--fully-ink)}
+.sfoot{display:flex;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink-soft)}
+.sfoot b{color:var(--ink);font-weight:800}
 .tgrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:18px}
 @media(min-width:620px){.tgrid{grid-template-columns:1fr 1fr}}
 .totals{background:var(--card);border-radius:14px;padding:14px 16px}
@@ -267,6 +282,7 @@ function renderBoard(){
   }
   const fm = forecastAll(rows);
   const cls = z => { if (z.fc) { const d = RANK[z.fc]-RANK[z.st]; return d>0?"up":d<0?"down":"stay"; } const f = fm.get(z.id); if (!f) return "none"; return f.dir>0?"up":f.dir<0?"down":f.toss?"toss":"stay"; };
+  const nextTier = z => z.fc || (fm.get(z.id) || {}).tier || z.st;
   const c = {up:0, down:0, toss:0};
   rows.forEach(z => { const k = cls(z); if (k in c) c[k]++; });
   const q = filt.q.trim().replace("#","");
@@ -279,9 +295,17 @@ function renderBoard(){
   $app.innerHTML = `<div class="board">
     <div class="bhead"><div><h1>Transfer Surge</h1><div class="bsub">${rows.length} warzones, approximate forecast for next round</div></div>
       <div class="bbtns"><button class="bbtn ghost" id="lo">Log out</button></div></div>
-    <div class="tgrid">
-      <div class="totals"><h2>Next round</h2>${tr("Likely up", c.up)}${tr("Likely down", c.down)}${tr("Toss-ups", c.toss)}${tr("#1053", homeTxt)}</div>
-      <div class="totals"><h2>Now</h2>${["L","S","F"].map(t => tr(`<span class="badge ${t}">${TIER_NAME[t]}</span>`, rows.filter(z => z.st === t).length)).join("")}${tr("Semi-open band", "567 – 2,422")}</div>
+    <div class="sum">
+      <div class="sgrid">
+        <span></span><span class="sh">Now</span><span class="sh">Next</span>
+        ${["L","S","F"].map(t => `<span class="badge ${t}">${TIER_NAME[t]}</span><b>${rows.filter(z => z.st === t).length}</b><b>${rows.filter(z => nextTier(z) === t).length}</b>`).join("")}
+      </div>
+      <div class="moves">
+        <div class="mv up"><b>${c.up}</b><span>Likely up</span></div>
+        <div class="mv down"><b>${c.down}</b><span>Likely down</span></div>
+        <div class="mv toss"><b>${c.toss}</b><span>Toss-ups</span></div>
+      </div>
+      <div class="sfoot"><span><b>#1053</b> ${homeTxt}</span><span>Semi-open band 567–2,422</span></div>
     </div>
     <div class="filters">
       <input id="fq" type="search" inputmode="numeric" placeholder="Search warzone #" value="${esc(filt.q)}" autocomplete="off">
