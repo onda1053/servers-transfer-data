@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Servers transfer data</title>
+<meta name="theme-color" content="#EEF1F5">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Same look as the Transfer to 1053 form and board */
+:root{
+  --ink:#333333; --ink-soft:#5F6670; --ink-faint:#98A0AA;
+  --bg:#EEF1F5; --paper:#F8FAFC; --card:#FFFFFF; --line:#D5DBE3;
+  --err:#B3261E; --ok:#23784A; --okbg:#DCEFE3; --errbg:#F6DEDC;
+  --gold:#D4A62A; --purple:#7A4FC4; --blue:#2F6BD1; --white:#FFFFFF;
+  --fully:#F3E4B5; --fully-ink:#6B4F07; --semi:#F6DEDC; --semi-ink:#8A2C22; --lim:#E1E5EB; --lim-ink:#3F4650;
+  --ease:cubic-bezier(.2,.75,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{font-family:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:8px}
+h1{font-size:clamp(27px,6.8vw,38px);line-height:1.14;font-weight:800;letter-spacing:-.025em}
+.hint{margin-top:10px;font-size:15px;color:var(--ink-soft);line-height:1.45;font-weight:500}
+.inp{width:100%;border:0;border-bottom:2px solid var(--line);background:transparent;padding:6px 0 10px;font-size:19px;font-weight:700;outline:none;border-radius:0;margin-top:18px}
+.inp:focus{border-bottom-color:var(--ink)}
+.err{margin-top:12px;font-size:15px;font-weight:700;color:var(--err);min-height:22px}
+.actions{margin-top:20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.btn{background:var(--ink);color:#fff;border:0;border-radius:12px;padding:15px 28px;font-size:17px;font-weight:800;transition:transform .12s var(--ease),opacity .2s}
+.btn:active{transform:scale(.95)}
+.btn[disabled]{opacity:.55;cursor:default}
+.login{max-width:400px;margin:0 auto;padding:110px 22px}
+
+.board{max-width:780px;margin:0 auto;padding:calc(22px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 60px max(16px,env(safe-area-inset-left))}
+.bhead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bhead h1{font-size:26px}
+.bsub{font-size:14px;color:var(--ink-soft);font-weight:600;margin-top:2px}
+.bbtns{display:flex;gap:8px}
+.bbtn{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:800;font-size:14px}
+.bbtn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.bbtn[disabled]{opacity:.55}
+.tgrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:18px}
+@media(min-width:620px){.tgrid{grid-template-columns:1fr 1fr}}
+.totals{background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.totals h2{font-size:15px;font-weight:800;margin-bottom:6px}
+.trow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:15px;font-weight:600}
+.trow:first-of-type{border-top:0}
+.trow b{font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.trow span{display:flex;align-items:center;gap:8px;min-width:0}
+
+.filters{margin-top:12px;background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+.filters input,.filters select{width:100%;border:2px solid var(--line);border-radius:10px;background:var(--card);padding:9px 12px;font-size:15px;font-weight:600;outline:none;color:var(--ink)}
+.filters input:focus,.filters select:focus{border-color:var(--ink)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:var(--card);border-radius:20px;padding:5px 11px;font-weight:700;font-size:13px}
+.chip.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.fmeta{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:var(--ink-soft)}
+.fmeta button{background:none;border:0;font-weight:700;font-size:13px;color:var(--ink-soft);text-decoration:underline;text-underline-offset:3px;padding:0}
+
+.card{margin-top:10px;background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.card.home{border-color:var(--ink)}
+.ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.cname{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.cname small{font-size:13px;font-weight:700;color:var(--ink-soft);margin-left:6px}
+.pts{text-align:right}
+.pts small{display:block;font-size:12px;color:var(--ink-soft);font-weight:600}
+.pts b{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.badge{font-size:12px;font-weight:800;padding:3px 8px;border-radius:6px;background:var(--line);white-space:nowrap}
+.badge.F{background:var(--fully);color:var(--fully-ink)}
+.badge.S{background:var(--semi);color:var(--semi-ink)}
+.badge.L{background:var(--lim);color:var(--lim-ink)}
+.arrow{font-weight:800;color:var(--ink-soft);font-size:13px}
+.move{font-size:12px;font-weight:800;padding:3px 8px;border-radius:6px;border:2px solid var(--line);white-space:nowrap}
+.move.up{border-color:var(--ok);color:var(--ok)}
+.move.down{border-color:var(--err);color:var(--err)}
+.move.toss{border-color:var(--gold);color:var(--fully-ink)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.stat{display:flex;align-items:center;gap:6px;min-width:0}
+.stat b{font-size:15px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stat.full b{color:var(--err)}
+.stat.wide{grid-column:span 3}
+.stat.wide small{font-size:12px;color:var(--ink-soft);font-weight:600}
+.sw{width:16px;height:16px;border-radius:4px;flex:none;border:2px solid rgba(0,0,0,.1)}
+.sw.gold{background:var(--gold)}.sw.purple{background:var(--purple)}.sw.blue{background:var(--blue)}.sw.white{background:var(--white);border-color:var(--line)}
+.comment{margin-top:10px;font-size:14px;line-height:1.45;color:var(--ink-soft);white-space:pre-wrap;word-break:break-word;font-weight:500}
+.cardfoot{display:flex;gap:16px;align-items:center;margin-top:10px}
+.notebtn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:0;padding:4px 0;font-weight:700;font-size:13px;color:var(--ink-soft)}
+.editor{margin-top:12px;display:grid;gap:10px}
+.erow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ef label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px}
+.ef input,.ef select,.ef textarea{width:100%;border:2px solid var(--line);border-radius:10px;background:var(--card);padding:9px 10px;font-size:15px;font-weight:600;outline:none}
+.ef input:focus,.ef select:focus,.ef textarea:focus{border-color:var(--ink)}
+.ef textarea{min-height:70px;resize:vertical;line-height:1.4}
+.seatgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(min-width:620px){.seatgrid{grid-template-columns:repeat(4,1fr)}}
+.seatgrid .ef label{display:flex;align-items:center;gap:5px}
+.pair{display:flex;align-items:center;gap:4px}
+.pair input{padding:9px 6px;text-align:center}
+.pair span{font-weight:800;color:var(--ink-faint)}
+.erow .row{display:flex;gap:8px}
+.empty{margin-top:30px;color:var(--ink-soft);font-weight:600}
+.appendix{margin-top:30px;background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:12px 16px}
+.appendix summary{font-weight:800;font-size:15px;cursor:pointer}
+.appendix p,.appendix li{font-size:14px;line-height:1.5;color:var(--ink-soft);font-weight:500;margin-top:8px}
+.appendix ul{padding-left:18px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;font-size:14px;z-index:20;max-width:90vw}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+/* ============================ CONNECTION ============================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCPov63OGpjHzybq30in1HqFfB2hW7__yw",
+  authDomain: "servers-transfer-data.firebaseapp.com",
+  projectId: "servers-transfer-data",
+  storageBucket: "servers-transfer-data.firebasestorage.app",
+  messagingSenderId: "546848385858",
+  appId: "1:546848385858:web:429ae873b9a4597113f6db"
+};
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, doc, updateDoc, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const auth = getAuth(fbApp);
+const COL = "surge_zones";
+const HOME = "1053";
+
+
+/* ============================ FORECAST ============================ */
+const TIER_NAME = {F:"Fully Open", S:"Semi-open", L:"Limited Open"};
+const RANK = {F:0, S:1, L:2};
+const CAPS = {F:["83.7M","","","2"], S:["60","40","5","1"], L:["40","30","3","0"]};
+const LO = 567, HI = 2422;   // Semi-open band this round
+function parsePts(s){
+  if (s == null) return NaN;
+  let t = String(s).trim().replace(/,/g,"").toUpperCase();
+  const lt = t.startsWith("<"); if (lt) t = t.slice(1);
+  const m = t.match(/^(\d+(?:\.\d+)?)([KM]?)$/); if (!m) return NaN;
+  const v = parseFloat(m[1]) * (m[2]==="K" ? 1000 : m[2]==="M" ? 1e6 : 1);
+  return lt ? v - 3 : v;
+}
+const n = v => { const x = parseInt(v,10); return isNaN(x) ? 0 : x; };
+const clamp = x => Math.max(0, Math.min(1, x));
+function fillRate(z){
+  const cap = n(z.w)+n(z.b)+n(z.p)+n(z.g), got = n(z.fw)+n(z.fb)+n(z.fp)+n(z.fg);
+  return cap ? Math.min(1, got/cap) : 0;
+}
+/* Approximate forecast for Semi-open and Limited Open zones. Fully Open zones are not forecast.
+   Returns {tier, dir, odds, toss}: dir 1 = moves up, -1 = moves down, 0 = stays; toss = could go either way. */
+function zoneForecast(z){
+  if (z.st === "F") return null;
+  const pts = parsePts(z.pts); if (isNaN(pts)) return null;
+  const f = fillRate(z);
+  let up = 0, down = 0;
+  if (z.st === "S") {
+    up = clamp(clamp((pts - 1800)/(HI - 1800)) * (0.5 + 0.5*f) + (n(z.g) > 0 && n(z.fg) >= n(z.g) ? 0.1 : 0));
+    down = clamp(clamp(1 - (pts - LO)/400) * (0.5 + 0.5*(1 - f)));
+  } else {
+    down = clamp(clamp(1 - (pts - HI)/600) * (0.5 + 0.5*(1 - f)));
+  }
+  const dir = up >= down ? 1 : -1, pr = Math.round(Math.min(0.9, Math.max(up, down))*100);
+  const moved = z.st === "S" ? (dir > 0 ? "L" : "F") : "S";
+  if (pr >= 55) return {tier: moved, dir, odds: pr, toss: false};
+  if (pr >= 40) return {tier: z.st, dir: 0, odds: pr, toss: true, tossDir: dir, tossTier: moved};
+  return {tier: z.st, dir: 0, odds: Math.min(90, 100 - pr), toss: false};
+}
+function forecastAll(zones){ return new Map(zones.map(z => [z.id, zoneForecast(z)])); }
+
+/* ============================ HELPERS ============================ */
+const $app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){ const el = document.createElement("div"); el.className = "toast"; el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
+
+let rows = [], unsub = null, editing = null;
+const filt = {q:"", now:"", move:"", sort:"zone"};
+
+/* ============================ LOGIN ============================ */
+function boardLogin(msg){
+  $app.innerHTML = `<div class="login"><h1>Transfer Surge</h1><p class="hint">Leaders only.</p>
+    <input class="inp" id="em" type="email" autocomplete="username" placeholder="Login email">
+    <input class="inp" id="pw" type="password" autocomplete="current-password" placeholder="Password">
+    <div class="err" id="er">${esc(msg||"")}</div>
+    <div class="actions"><button class="btn" id="li">Log in</button></div></div>`;
+  const doLogin = async () => {
+    const b = document.getElementById("li"); b.disabled = true;
+    try { await signInWithEmailAndPassword(auth, document.getElementById("em").value.trim(), document.getElementById("pw").value); }
+    catch (e) { document.getElementById("er").textContent = "Login failed. Check email and password."; b.disabled = false; }
+  };
+  document.getElementById("li").onclick = doLogin;
+  document.getElementById("pw").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+}
+
+/* ============================ BOARD ============================ */
+function seatStat(cls, f, c){
+  const full = c !== "" && n(f) >= n(c) && n(c) > 0;
+  return `<div class="stat ${full?"full":""}"><span class="sw ${cls}"></span><b>${esc(f===""?"–":f)}/${esc(c)}</b></div>`;
+}
+function moveTag(z, fc){
+  if (z.fc) { const d = RANK[z.fc] - RANK[z.st]; return `${d>0?`<span class="move up">Up</span>`:d<0?`<span class="move down">Down</span>`:""}<span class="arrow">set by leader</span>`; }
+  if (!fc) return `<span class="arrow">Not forecast</span>`;
+  if (fc.dir > 0) return `<span class="move up">Likely up</span><span class="arrow">${fc.odds}%</span>`;
+  if (fc.dir < 0) return `<span class="move down">Likely down</span><span class="arrow">${fc.odds}%</span>`;
+  if (fc.toss) return `<span class="move toss">Could go ${fc.tossDir>0?"up":"down"}</span><span class="arrow">${fc.odds}%</span>`;
+  return `<span class="arrow">Stays, ${fc.odds}%</span>`;
+}
+function cardHtml(z, fc){
+  const st = z.st, ft = z.fc || (fc ? fc.tier : null);
+  const seats = st === "F"
+    ? `<div class="stat wide"><span class="sw white"></span><span class="sw blue"></span><span class="sw purple"></span><b>${esc(z.w||"–")}</b><small>power</small></div>${seatStat("gold", z.fg, z.g)}`
+    : seatStat("white", z.fw, z.w) + seatStat("blue", z.fb, z.b) + seatStat("purple", z.fp, z.p) + seatStat("gold", z.fg, z.g);
+  const body = editing === z.id ? editorHtml(z) : `
+    ${z.comment ? `<div class="comment">${esc(z.comment)}</div>` : ""}
+    <div class="cardfoot"><button class="notebtn" data-edit="${esc(z.id)}">Edit</button></div>`;
+  return `<div class="card ${z.id===HOME?"home":""}" id="z${esc(z.id)}">
+    <div class="ctop">
+      <div><div class="cname">#${esc(z.zone)}${z.id===HOME?"<small>Home</small>":""}</div>
+        <div class="flow"><span class="badge ${st}">${TIER_NAME[st]}</span>${ft ? `<span class="arrow">→</span><span class="badge ${ft}">${TIER_NAME[ft]}</span>` : ""}${moveTag(z, fc)}</div></div>
+      <div class="pts"><small>Points</small><b>${esc(z.pts||"–")}</b></div>
+    </div>
+    <div class="stats">${seats}</div>
+    ${body}
+  </div>`;
+}
+function editorHtml(z){
+  const pair = (cls, label, fk, ck) => `<div class="ef"><label><span class="sw ${cls}"></span>${label}</label>
+    <div class="pair"><input id="e_${fk}" inputmode="numeric" value="${esc(z[fk])}" aria-label="${label} filled"><span>/</span><input id="e_${ck}" inputmode="numeric" value="${esc(z[ck])}" aria-label="${label} total"></div></div>`;
+  const seats = z.st === "F"
+    ? `<div class="erow"><div class="ef"><label for="e_w">Power figure</label><input id="e_w" value="${esc(z.w)}"></div>${pair("gold","Gold","fg","g")}</div>`
+    : `<div class="seatgrid">${pair("white","White","fw","w")}${pair("blue","Blue","fb","b")}${pair("purple","Purple","fp","p")}${pair("gold","Gold","fg","g")}</div>`;
+  return `<div class="editor">
+    <div class="erow">
+      <div class="ef"><label for="e_pts">Transfer points</label><input id="e_pts" value="${esc(z.pts)}" placeholder="e.g. 2.3K"></div>
+      <div class="ef"><label for="e_st">Status now</label><select id="e_st">${["F","S","L"].map(t => `<option value="${t}" ${z.st===t?"selected":""}>${TIER_NAME[t]}</option>`).join("")}</select></div>
+    </div>
+    ${seats}
+    <div class="ef"><label for="e_fc">Forecast</label><select id="e_fc"><option value="">Automatic</option>${["F","S","L"].map(t => `<option value="${t}" ${z.fc===t?"selected":""}>${TIER_NAME[t]} (set by leader)</option>`).join("")}</select></div>
+    <div class="ef"><label for="e_cm">Comment</label><textarea id="e_cm" maxlength="1000">${esc(z.comment)}</textarea></div>
+    <div class="erow"><div class="row"><button class="bbtn" data-save="${esc(z.id)}">Save</button><button class="bbtn ghost" data-cancel="1">Cancel</button></div></div>
+  </div>`;
+}
+
+function renderBoard(){
+  const ae = document.activeElement, keepQ = ae && ae.id === "fq", caret = keepQ ? ae.selectionStart : 0;
+  if (!rows.length) {
+    $app.innerHTML = `<div class="board"><div class="bhead"><div><h1>Transfer Surge</h1><div class="bsub">No warzones on the board yet</div></div>
+      <div class="bbtns"><button class="bbtn ghost" id="lo">Log out</button></div></div>
+      <p class="empty">Paste the data block you got from Claude to fill the board. This only needs to happen once.</p>
+      <div class="ef" style="margin-top:14px"><label for="imp">Data block</label><textarea id="imp" spellcheck="false" autocomplete="off" placeholder="[[933,&quot;&lt;453&quot;,&quot;F&quot;, …]]"></textarea></div>
+      <div class="err" id="imperr"></div>
+      <div class="actions"><button class="btn" id="seed">Import warzones</button></div></div>`;
+    document.getElementById("lo").onclick = () => signOut(auth);
+    document.getElementById("seed").onclick = seedBoard;
+    return;
+  }
+  const fm = forecastAll(rows);
+  const cls = z => { if (z.fc) { const d = RANK[z.fc]-RANK[z.st]; return d>0?"up":d<0?"down":"stay"; } const f = fm.get(z.id); if (!f) return "none"; return f.dir>0?"up":f.dir<0?"down":f.toss?"toss":"stay"; };
+  const c = {up:0, down:0, toss:0};
+  rows.forEach(z => { const k = cls(z); if (k in c) c[k]++; });
+  const q = filt.q.trim().replace("#","");
+  const shown = rows.filter(z => (!q || String(z.zone).includes(q)) && (!filt.now || z.st === filt.now) && (!filt.move || cls(z) === filt.move));
+  shown.sort(filt.sort === "pts" ? (a,b) => (parsePts(b.pts)||0) - (parsePts(a.pts)||0) : (a,b) => a.zone - b.zone);
+  const active = !!(q || filt.now || filt.move);
+  const tr = (label, v) => `<div class="trow"><span>${label}</span><b>${v}</b></div>`;
+  const home = rows.find(z => z.id === HOME), hf = home ? fm.get(HOME) : null;
+  const homeTxt = !home ? "–" : home.fc ? `${TIER_NAME[home.fc]} (set by leader)` : !hf ? "Not forecast" : hf.dir ? `${TIER_NAME[hf.tier]}, ${hf.odds}%` : hf.toss ? `Could go ${hf.tossDir>0?"up":"down"}, ${hf.odds}%` : `Stays, ${hf.odds}%`;
+  $app.innerHTML = `<div class="board">
+    <div class="bhead"><div><h1>Transfer Surge</h1><div class="bsub">${rows.length} warzones, approximate forecast for next round</div></div>
+      <div class="bbtns"><button class="bbtn ghost" id="lo">Log out</button></div></div>
+    <div class="tgrid">
+      <div class="totals"><h2>Next round</h2>${tr("Likely up", c.up)}${tr("Likely down", c.down)}${tr("Toss-ups", c.toss)}${tr("#1053", homeTxt)}</div>
+      <div class="totals"><h2>Now</h2>${["L","S","F"].map(t => tr(`<span class="badge ${t}">${TIER_NAME[t]}</span>`, rows.filter(z => z.st === t).length)).join("")}${tr("Semi-open band", "567 – 2,422")}</div>
+    </div>
+    <div class="filters">
+      <input id="fq" type="search" inputmode="numeric" placeholder="Search warzone #" value="${esc(filt.q)}" autocomplete="off">
+      <div class="chips">${[["","All"],["up","Likely up"],["down","Likely down"],["toss","Toss-ups"],["stay","Stays"]].map(([k,l]) => `<button class="chip ${filt.move===k?"on":""}" data-fmove="${k}">${l}</button>`).join("")}</div>
+      <div class="frow">
+        <select id="fnow" aria-label="Status now"><option value="">Status now: all</option>${["F","S","L"].map(t => `<option value="${t}" ${filt.now===t?"selected":""}>${TIER_NAME[t]}</option>`).join("")}</select>
+        <select id="fsort" aria-label="Sort"><option value="zone" ${filt.sort==="zone"?"selected":""}>Sort: warzone #</option><option value="pts" ${filt.sort==="pts"?"selected":""}>Sort: points</option></select>
+      </div>
+      <div class="fmeta"><span>${active ? `Showing ${shown.length} of ${rows.length}` : `${rows.length} shown`}</span>${active ? `<button id="fclear">Clear filters</button>` : ""}</div>
+    </div>
+    ${active && !shown.length ? `<p class="empty">No warzone matches these filters.</p>` : ""}
+    ${shown.map(z => cardHtml(z, fm.get(z.id))).join("")}
+    <details class="appendix"><summary>How the forecast works</summary>
+      <p>An approximate overview, not a prediction of the game's formula. Expect some misses. Fully Open zones are not forecast.</p>
+      <p><b>Semi-open moving up:</b> zones with 1.8K+ points. The closer to 2,422 and the fuller their seats, the higher the chance. Filling the gold seat adds 10%.</p>
+      <p><b>Semi-open moving down:</b> zones within 400 points of 567. The closer to 567 and the emptier their seats, the higher the chance.</p>
+      <p><b>Limited Open moving down:</b> zones within 600 points of 2,422. The closer to 2,422 and the emptier their seats, the higher the chance.</p>
+      <ul>
+        <li>55% or more: likely moves. 40–54%: toss-up. Below 40%: stays.</li>
+        <li>A full intake is assumed to cover players who left.</li>
+        <li>Pick a forecast by hand under Edit when you know better. It then shows "set by leader".</li>
+      </ul>
+    </details>
+  </div>`;
+  if (keepQ) { const el = document.getElementById("fq"); el.focus({preventScroll:true}); try { el.setSelectionRange(caret, caret); } catch(_){} }
+  document.getElementById("lo").onclick = () => signOut(auth);
+  document.getElementById("fq").addEventListener("input", e => { filt.q = e.target.value; renderBoard(); });
+  $app.querySelectorAll("[data-fmove]").forEach(b => b.onclick = () => { filt.move = b.dataset.fmove; renderBoard(); });
+  document.getElementById("fnow").onchange = e => { filt.now = e.target.value; renderBoard(); };
+  document.getElementById("fsort").onchange = e => { filt.sort = e.target.value; renderBoard(); };
+  const fx = document.getElementById("fclear"); if (fx) fx.onclick = () => { filt.q = ""; filt.now = ""; filt.move = ""; renderBoard(); };
+  $app.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => { editing = b.dataset.edit; renderBoard(); });
+  $app.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { editing = null; renderBoard(); });
+  $app.querySelectorAll("[data-save]").forEach(b => b.onclick = () => saveEdit(b));
+  const st = document.getElementById("e_st");
+  if (st) st.onchange = () => {   // a new status gets that status's standard seat totals
+    const [w,bb,p,g] = CAPS[st.value];
+    const z = rows.find(r => r.id === editing);
+    if (!z) return;
+    ["pts","fw","fb","fp","fg"].forEach(k => { const el = document.getElementById("e_" + k); if (el) z[k] = el.value; });
+    const fcEl = document.getElementById("e_fc"), cmEl = document.getElementById("e_cm");
+    if (fcEl) z.fc = fcEl.value; if (cmEl) z.comment = cmEl.value;
+    Object.assign(z, {st: st.value, w, b: bb, p, g}); renderBoard();
+  };
+}
+
+async function saveEdit(btn){
+  const id = btn.dataset.save, v = k => { const el = document.getElementById("e_" + k); return el ? el.value.trim() : undefined; };
+  const patch = {pts: v("pts"), st: v("st"), fc: v("fc"), comment: (v("cm")||"").slice(0,1000), updatedAt: serverTimestamp(), updatedBy: auth.currentUser ? auth.currentUser.email : ""};
+  ["w","b","p","g","fw","fb","fp","fg"].forEach(k => { const x = v(k); if (x !== undefined) patch[k] = x; });
+  if (patch.st === "F") { patch.b = ""; patch.p = ""; patch.fw = ""; patch.fb = ""; patch.fp = ""; }
+  if (isNaN(parsePts(patch.pts))) { toast("Type points like the game: 632, 2.3K or <453"); return; }
+  btn.disabled = true;
+  try { await updateDoc(doc(db, COL, id), patch); editing = null; renderBoard(); toast("Saved"); }
+  catch (e) { console.error(e); toast("Couldn't save that. Check your connection and try again."); btn.disabled = false; }
+}
+
+/* Data block: [[zone, points, status F/S/L, white cap, blue cap, purple cap, gold cap, white filled, blue filled, purple filled, gold filled, comment], …]
+   For Fully Open zones the white cap holds the zone's power figure. */
+function parseBlock(text){
+  let data;
+  try { data = JSON.parse(text.trim()); } catch (e) { return "That isn't a complete data block. Copy all of it, from the first [ to the last ]."; }
+  if (!Array.isArray(data) || !data.length || data.length > 400) return "That isn't a valid data block.";
+  const seen = new Set();
+  for (const r of data) {
+    if (!Array.isArray(r) || r.length !== 12 || !Number.isInteger(r[0]) || !["F","S","L"].includes(r[2]) || r.slice(1).some(v => typeof v !== "string" && !["F","S","L"].includes(v))) return "Some rows in the data block are damaged. Copy it again from the chat.";
+    if (seen.has(r[0])) return `Warzone #${r[0]} appears twice in the data block.`;
+    seen.add(r[0]);
+  }
+  return data;
+}
+async function seedBoard(){
+  const b = document.getElementById("seed"), er = document.getElementById("imperr");
+  const SEED = parseBlock(document.getElementById("imp").value);
+  if (typeof SEED === "string") { er.textContent = SEED; return; }
+  er.textContent = ""; b.disabled = true;
+  try {
+    const batch = writeBatch(db);
+    SEED.forEach(r => batch.set(doc(db, COL, String(r[0])), {zone:r[0], pts:r[1], st:r[2], w:r[3], b:r[4], p:r[5], g:r[6], fw:r[7], fb:r[8], fp:r[9], fg:r[10], comment:r[11], fc:"", updatedAt: serverTimestamp()}));
+    await batch.commit(); toast(`${SEED.length} warzones imported`);
+  } catch (e) { console.error(e); toast(e.code === "permission-denied" ? "No permission. Check the Firestore rules." : "Couldn't import the data. Try again."); b.disabled = false; }
+}
+
+/* ============================ START ============================ */
+onAuthStateChanged(auth, user => {
+  if (unsub) { unsub(); unsub = null; }
+  if (!user) { boardLogin(); return; }
+  $app.innerHTML = `<div class="board"><p class="empty">Loading…</p></div>`;
+  unsub = onSnapshot(collection(db, COL),
+    snap => {
+      rows = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      if (editing && document.getElementById("e_cm")) return;   // don't wipe an open edit; it refreshes after Save or Cancel
+      renderBoard();
+    },
+    err => { console.error(err); if (err.code === "permission-denied") boardLogin("This login has no access. Check the Firestore rules."); else toast("Connection issue. Data will refresh when you're back online."); });
+});
+</script>
+</body>
+</html>
